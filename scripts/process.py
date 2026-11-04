@@ -29,12 +29,7 @@ def normalize_playlist_url(url: str) -> str:
 def get_ydl_base_opts() -> dict:
     opts = {
         "quiet": True,
-        "js_runtimes": {"node": {}},
-        "extractor_args": {
-            "youtube": {
-                "player_client": ["android", "web"],
-            }
-        },
+        "remote_components": ["ejs:github"],
     }
     cookies = os.environ.get("YOUTUBE_COOKIES", "").strip()
     if cookies:
