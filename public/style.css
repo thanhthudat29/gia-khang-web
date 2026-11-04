@@ -204,6 +204,12 @@ button:disabled {
   margin-bottom: 16px;
 }
 
+.status-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .status-badge {
   display: inline-flex;
   align-items: center;
@@ -218,6 +224,24 @@ button:disabled {
 .status-badge.completed {
   background: var(--success-bg);
   color: var(--success);
+}
+
+.cancel-btn {
+  padding: 6px 14px;
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn:hover {
+  background: #fecaca;
+  color: #991b1b;
 }
 
 #job-info {

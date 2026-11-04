@@ -3,6 +3,7 @@ const urlInput = document.getElementById("url-input");
 const urlLabel = document.getElementById("url-label");
 const urlError = document.getElementById("url-error");
 const submitBtn = document.getElementById("submit-btn");
+const cancelBtn = document.getElementById("cancel-btn");
 const statusCard = document.getElementById("status-card");
 const statusBadge = document.getElementById("status-badge");
 const jobInfo = document.getElementById("job-info");
@@ -17,8 +18,27 @@ const tabPlaylist = document.getElementById("tab-playlist");
 let currentMode = "single";
 let currentJobId = null;
 let pollTimer = null;
-const downloadedFiles = new Set();
+let downloadedFiles = new Set();
 let renderedManifest = null;
+
+function getDownloadedFilesKey(jobId) {
+  return `downloaded_files_${jobId}`;
+}
+
+function loadDownloadedFiles(jobId) {
+  try {
+    const raw = sessionStorage.getItem(getDownloadedFilesKey(jobId));
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch (e) {
+    return new Set();
+  }
+}
+
+function saveDownloadedFiles(jobId, set) {
+  try {
+    sessionStorage.setItem(getDownloadedFilesKey(jobId), JSON.stringify(Array.from(set)));
+  } catch (e) {}
+}
 
 tabSingle.addEventListener("click", () => {
   if (currentMode === "single") return;
@@ -116,6 +136,7 @@ function updateQueueStatus(manifest, files) {
 
     if (!downloadedFiles.has(file.id)) {
       downloadedFiles.add(file.id);
+      saveDownloadedFiles(currentJobId, downloadedFiles);
       triggerDownload(file.download_url);
     }
 
@@ -192,6 +213,7 @@ async function checkStatus() {
 
 function startPolling(jobId) {
   currentJobId = jobId;
+  downloadedFiles = loadDownloadedFiles(currentJobId);
   jobInfo.textContent = `Mã: ${currentJobId}`;
   statusCard.classList.remove("hidden");
   statusBadge.textContent = "Máy chủ đang khởi động...";
@@ -261,6 +283,35 @@ form.addEventListener("submit", async (e) => {
     submitBtn.textContent = "Bắt Đầu";
     statusCard.classList.add("hidden");
   }
+});
+
+cancelBtn.addEventListener("click", async () => {
+  if (!confirm("Bạn có chắc chắn muốn hủy tiến trình này không?")) return;
+
+  if (pollTimer) clearInterval(pollTimer);
+
+  const prevJob = currentJobId;
+  currentJobId = null;
+  downloadedFiles.clear();
+  renderedManifest = null;
+
+  if (prevJob) {
+    sessionStorage.removeItem("current_job_id");
+    sessionStorage.removeItem(getDownloadedFilesKey(prevJob));
+    try {
+      await fetch("/api/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ job_id: prevJob }),
+      });
+    } catch (e) {}
+  }
+
+  statusCard.classList.add("hidden");
+  fileList.innerHTML = "";
+  manifestInfo.classList.add("hidden");
+  submitBtn.disabled = false;
+  submitBtn.textContent = "Bắt Đầu";
 });
 
 const savedJob = sessionStorage.getItem("current_job_id");
