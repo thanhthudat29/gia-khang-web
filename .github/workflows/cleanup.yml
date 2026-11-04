@@ -1,0 +1,36 @@
+name: Scheduled Maintenance
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete releases older than 24h
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python -c "
+          import json, subprocess, datetime
+
+          try:
+              out = subprocess.check_output(['gh', 'release', 'list', '--limit', '100', '--json', 'tagName,createdAt'], text=True)
+              releases = json.loads(out)
+              now = datetime.datetime.now(datetime.timezone.utc)
+              count = 0
+              for r in releases:
+                  created = datetime.datetime.fromisoformat(r['createdAt'].replace('Z', '+00:00'))
+                  if (now - created).total_seconds() > 86400:
+                      print(f'Deleting {r[\"tagName\"]} created at {r[\"createdAt\"]}')
+                      subprocess.run(['gh', 'release', 'delete', r['tagName'], '--cleanup-tag', '-y'])
+                      count += 1
+              print(f'Cleaned up {count} releases older than 24h.')
+          except Exception as e:
+              print(f'Cleanup notice: {e}')
+          "

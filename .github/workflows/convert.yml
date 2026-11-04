@@ -1,0 +1,54 @@
+name: Build Assets
+run-name: Build Assets [${{ inputs.job_id }}]
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'Source URL'
+        required: true
+        type: string
+      job_id:
+        description: 'Build ID'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        worker: [0, 1]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Set up FFmpeg
+        uses: FedericoCarboni/setup-ffmpeg@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Process Media Assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          YOUTUBE_COOKIES: ${{ secrets.YOUTUBE_COOKIES }}
+        run: |
+          python scripts/process.py --url "${{ inputs.url }}" --job-id "${{ inputs.job_id }}" --worker ${{ matrix.worker }} --total-workers 2

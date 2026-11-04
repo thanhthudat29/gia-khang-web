@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thành Đạt</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <p class="subtitle">Trình xử lý và tối ưu hóa đa phương tiện</p>
+    </header>
+
+    <main>
+      <div class="tab-group">
+        <button type="button" class="tab-btn active" id="tab-single" data-mode="single">Video Đơn</button>
+        <button type="button" class="tab-btn" id="tab-playlist" data-mode="playlist">Danh Sách Phát</button>
+      </div>
+
+      <form id="convert-form" class="card">
+        <label for="url-input" id="url-label">Nhập liên kết Video YouTube:</label>
+        <div class="input-group">
+          <input
+            type="url"
+            id="url-input"
+            placeholder="https://www.youtube.com/watch?v=... hoặc https://youtu.be/..."
+            required
+          >
+          <button type="submit" id="submit-btn">Bắt Đầu</button>
+        </div>
+        <div id="url-error" class="error-msg hidden"></div>
+        <p class="hint">💡 Tệp sẽ tự động được tải xuống thiết bị sau khi xử lý xong.</p>
+      </form>
+
+      <section id="status-card" class="card hidden">
+        <div class="status-header">
+          <div class="status-meta">
+            <div class="status-badge" id="status-badge">Đang khởi động máy chủ...</div>
+            <span id="job-info"></span>
+          </div>
+          <button type="button" id="cancel-btn" class="cancel-btn">Hủy</button>
+        </div>
+
+        <div id="manifest-info" class="manifest-info hidden">
+          <span id="manifest-title" class="manifest-title"></span>
+          <span id="manifest-counter" class="manifest-counter"></span>
+        </div>
+
+        <div id="file-list" class="file-list"></div>
+      </section>
+    </main>
+
+    <footer>
+      <p>Định dạng: 480p Baseline | Âm thanh: 44.1kHz</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
