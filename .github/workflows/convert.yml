@@ -1,0 +1,40 @@
+name: Build Assets
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'Source URL'
+        required: true
+        type: string
+      job_id:
+        description: 'Build ID'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y ffmpeg
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Process Media Assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python scripts/process.py --url "${{ inputs.url }}" --job-id "${{ inputs.job_id }}"
