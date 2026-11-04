@@ -69,17 +69,20 @@ export async function onRequestGet({ request, env }) {
     let isCompleted = false;
     let runStatus = "queued";
     const runsResp = await fetch(
-      `https://api.github.com/repos/${repo}/actions/workflows/convert.yml/runs?per_page=5`,
+      `https://api.github.com/repos/${repo}/actions/runs?per_page=20`,
       { headers }
     );
 
     if (runsResp.ok) {
       const runsData = await runsResp.json();
-      const latestRun = (runsData.workflow_runs || [])[0];
-      if (latestRun) {
-        runStatus = latestRun.status;
-        if (latestRun.status === "completed") {
-          isCompleted = true;
+      for (const run of runsData.workflow_runs || []) {
+        const title = run.display_title || run.name || "";
+        if (title.includes(jobId)) {
+          runStatus = run.status;
+          if (run.status === "completed") {
+            isCompleted = true;
+          }
+          break;
         }
       }
     }

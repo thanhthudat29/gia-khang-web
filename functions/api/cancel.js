@@ -1,5 +1,15 @@
 export async function onRequestPost({ request, env }) {
   try {
+    const body = await request.json().catch(() => ({}));
+    const jobId = (body.job_id || "").trim();
+
+    if (!jobId) {
+      return new Response(JSON.stringify({ error: "Thiếu job_id" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const repo = env.GITHUB_REPO || "thanhthudat29/gia-khang-web";
     const token = env.GITHUB_TOKEN;
 
@@ -17,7 +27,7 @@ export async function onRequestPost({ request, env }) {
     };
 
     const runsResp = await fetch(
-      `https://api.github.com/repos/${repo}/actions/runs?per_page=10`,
+      `https://api.github.com/repos/${repo}/actions/runs?per_page=20`,
       { headers }
     );
 
@@ -25,9 +35,10 @@ export async function onRequestPost({ request, env }) {
     if (runsResp.ok) {
       const runsData = await runsResp.json();
       for (const run of runsData.workflow_runs || []) {
-        const isTarget = run.name === "Build Assets" || (run.path && run.path.includes("convert.yml"));
+        const title = run.display_title || run.name || "";
+        const isMatch = title.includes(jobId);
         const isActive = run.status === "in_progress" || run.status === "queued" || run.status === "waiting";
-        if (isTarget && isActive) {
+        if (isMatch && isActive) {
           const cResp = await fetch(
             `https://api.github.com/repos/${repo}/actions/runs/${run.id}/cancel`,
             {
