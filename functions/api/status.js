@@ -1,4 +1,3 @@
-// ponytail: Cloudflare Pages Function polling releases and workflow runs.
 export async function onRequestGet({ request, env }) {
   try {
     const { searchParams } = new URL(request.url);
@@ -22,7 +21,6 @@ export async function onRequestGet({ request, env }) {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
-    // 1. Fetch releases matching this job
     const relResp = await fetch(
       `https://api.github.com/repos/${repo}/releases?per_page=100`,
       { headers }
@@ -49,10 +47,8 @@ export async function onRequestGet({ request, env }) {
       }
     }
 
-    // Sort ready files by name
     readyFiles.sort((a, b) => a.name.localeCompare(b.name));
 
-    // 2. Fetch latest workflow run to check if still running
     let isCompleted = false;
     let runStatus = "queued";
     const runsResp = await fetch(
@@ -64,7 +60,7 @@ export async function onRequestGet({ request, env }) {
       const runsData = await runsResp.json();
       const latestRun = (runsData.workflow_runs || [])[0];
       if (latestRun) {
-        runStatus = latestRun.status; // queued, in_progress, completed
+        runStatus = latestRun.status;
         if (latestRun.status === "completed") {
           isCompleted = true;
         }

@@ -1,4 +1,3 @@
-// ponytail: Cloudflare Pages Function to dispatch GitHub Actions workflow without exposing token.
 export async function onRequestPost({ request, env }) {
   try {
     const body = await request.json();
@@ -21,7 +20,6 @@ export async function onRequestPost({ request, env }) {
       });
     }
 
-    // Generate safe alphanumeric job ID
     const jobId = "gk_" + Date.now().toString(36);
 
     const ghResp = await fetch(

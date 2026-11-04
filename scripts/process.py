@@ -7,7 +7,6 @@ import urllib.parse
 from pathlib import Path
 import yt_dlp
 
-# ponytail: Hardcoded fallback paths for portable tools on Windows; upgrade to dynamic config if relocated.
 for p in [r"D:\Portable\ffmpeg-master-latest-win64-gpl\bin", r"D:\Portable\node-v24.21.0-win-x64"]:
     if os.path.exists(p) and p not in os.environ.get("PATH", ""):
         os.environ["PATH"] = p + os.pathsep + os.environ.get("PATH", "")
@@ -37,7 +36,6 @@ def convert_video(url: str, output_dir: Path, prefix: str = "") -> Path:
         "noplaylist": True,
     }
 
-    # Clean stale temp files
     for stale in output_dir.glob("temp_*"):
         try:
             stale.unlink()
@@ -52,7 +50,6 @@ def convert_video(url: str, output_dir: Path, prefix: str = "") -> Path:
     clean_title = sanitize_name(title)
     final_output = output_dir / f"{prefix}{clean_title}_X20.mp4"
 
-    # HiFi Player X20 specs: H.264 baseline 3.1, 854x480 pad, AAC 128k 44100Hz + faststart
     cmd = [
         "ffmpeg", "-y", "-i", str(raw_file),
         "-c:v", "libx264", "-profile:v", "baseline", "-level", "3.1", "-pix_fmt", "yuv420p",
@@ -73,7 +70,6 @@ def convert_video(url: str, output_dir: Path, prefix: str = "") -> Path:
 def publish_release(job_id: str, index: int, file_path: Path, title: str):
     tag = f"rel_{job_id}_{index:02d}"
     clean_title = f"{index:02d}. {title}"[:60]
-    # ponytail: Using gh CLI for release upload; fallback to API if gh not in runner.
     cmd = [
         "gh", "release", "create", tag,
         str(file_path),
@@ -87,7 +83,7 @@ def main():
     parser.add_argument("--url", required=True, help="Source media URL")
     parser.add_argument("--job-id", required=True, help="Unique job ID for release tagging")
     parser.add_argument("--out-dir", default="output", help="Directory to store output files")
-    parser.add_argument("--no-release", action="store_true", help="Skip gh release creation (local test)")
+    parser.add_argument("--no-release", action="store_true", help="Skip gh release creation")
     args = parser.parse_args()
 
     out_dir = Path(args.out_dir)

@@ -31,15 +31,12 @@ async function checkStatus() {
       return;
     }
 
-    // Process ready files
     for (const file of data.files || []) {
       if (!downloadedFiles.has(file.id)) {
         downloadedFiles.add(file.id);
 
-        // Auto trigger browser download
         triggerDownload(file.download_url, file.name);
 
-        // Add to UI list
         const item = document.createElement("div");
         item.className = "file-item";
         item.innerHTML = `
@@ -104,7 +101,6 @@ form.addEventListener("submit", async (e) => {
     jobInfo.textContent = `Mã phiên: ${currentJobId}`;
     statusBadge.textContent = "Máy chủ đang chạy, chuẩn bị tải video...";
 
-    // Poll every 5 seconds
     if (pollTimer) clearInterval(pollTimer);
     pollTimer = setInterval(checkStatus, 5000);
     checkStatus();
