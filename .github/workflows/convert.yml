@@ -30,7 +30,7 @@ jobs:
       - name: Set up FFmpeg
         uses: FedericoCarboni/setup-ffmpeg@v3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
