@@ -304,6 +304,9 @@ form.addEventListener("submit", async (e) => {
 cancelBtn.addEventListener("click", async () => {
   if (!confirm("Bạn có chắc chắn muốn hủy tiến trình này không?")) return;
 
+  cancelBtn.disabled = true;
+  cancelBtn.textContent = "Đang hủy...";
+
   if (pollTimer) clearInterval(pollTimer);
 
   const prevJob = currentJobId;
@@ -323,6 +326,8 @@ cancelBtn.addEventListener("click", async () => {
     } catch (e) {}
   }
 
+  cancelBtn.disabled = false;
+  cancelBtn.textContent = "Hủy";
   statusCard.classList.add("hidden");
   fileList.innerHTML = "";
   manifestInfo.classList.add("hidden");
