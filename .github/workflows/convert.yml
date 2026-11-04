@@ -26,6 +26,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+          cache: 'pip'
 
       - name: Install dependencies
         run: |
@@ -36,5 +37,6 @@ jobs:
       - name: Process Media Assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          YOUTUBE_COOKIES: ${{ secrets.YOUTUBE_COOKIES }}
         run: |
           python scripts/process.py --url "${{ inputs.url }}" --job-id "${{ inputs.job_id }}"

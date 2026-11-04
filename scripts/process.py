@@ -26,15 +26,34 @@ def normalize_playlist_url(url: str) -> str:
         return f"https://www.youtube.com/playlist?list={qs['list'][0]}"
     return url
 
+def get_ydl_base_opts() -> dict:
+    opts = {
+        "quiet": True,
+        "js_runtimes": {"node": {}},
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["android", "web"],
+            }
+        },
+    }
+    cookies = os.environ.get("YOUTUBE_COOKIES", "").strip()
+    if cookies:
+        c_path = Path("/tmp/yt_cookies.txt") if os.name != "nt" else Path("yt_cookies.txt")
+        c_path.write_text(cookies, encoding="utf-8")
+        opts["cookiefile"] = str(c_path)
+    elif Path("cookies.txt").exists():
+        opts["cookiefile"] = "cookies.txt"
+    return opts
+
 def convert_video(url: str, output_dir: Path, prefix: str = "") -> Path:
     temp_tmpl = str(output_dir / "temp_%(id)s.%(ext)s")
-    ydl_opts = {
+    ydl_opts = get_ydl_base_opts()
+    ydl_opts.update({
         "format": "bestvideo[height<=720]+bestaudio/best[height<=720]/best",
         "outtmpl": temp_tmpl,
         "overwrites": True,
-        "quiet": True,
         "noplaylist": True,
-    }
+    })
 
     for stale in output_dir.glob("temp_*"):
         try:
@@ -91,7 +110,10 @@ def main():
 
     target_url = normalize_playlist_url(args.url)
 
-    with yt_dlp.YoutubeDL({"extract_flat": True, "quiet": True}) as ydl:
+    ydl_opts = get_ydl_base_opts()
+    ydl_opts["extract_flat"] = True
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(target_url, download=False)
 
     entries = info.get("entries")
