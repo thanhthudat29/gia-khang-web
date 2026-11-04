@@ -26,16 +26,27 @@ export async function onRequestGet({ request, env }) {
       { headers }
     );
 
+    let manifest = null;
     const readyFiles = [];
+    const prefix = `rel_${jobId}_`;
+
     if (relResp.ok) {
       const releases = await relResp.json();
-      const prefix = `rel_${jobId}_`;
       for (const rel of releases) {
-        if (rel.tag_name && rel.tag_name.startsWith(prefix)) {
+        if (rel.tag_name === `rel_${jobId}_manifest`) {
+          try {
+            manifest = JSON.parse(rel.body);
+          } catch (e) {
+            manifest = null;
+          }
+        } else if (rel.tag_name && rel.tag_name.startsWith(prefix)) {
+          const match = rel.tag_name.match(new RegExp(`^rel_${jobId}_(\\d+)$`));
+          const fileIndex = match ? parseInt(match[1], 10) : null;
           for (const asset of rel.assets || []) {
             if (asset.name.endsWith(".mp4")) {
               readyFiles.push({
                 id: asset.id,
+                index: fileIndex,
                 tag: rel.tag_name,
                 name: asset.name,
                 download_url: asset.browser_download_url,
@@ -47,7 +58,7 @@ export async function onRequestGet({ request, env }) {
       }
     }
 
-    readyFiles.sort((a, b) => a.name.localeCompare(b.name));
+    readyFiles.sort((a, b) => (a.index || 0) - (b.index || 0));
 
     let isCompleted = false;
     let runStatus = "queued";
@@ -71,9 +82,10 @@ export async function onRequestGet({ request, env }) {
       JSON.stringify({
         success: true,
         job_id: jobId,
-        status: runStatus,
-        is_completed: isCompleted,
+        manifest,
         files: readyFiles,
+        is_completed: isCompleted,
+        status: runStatus,
       }),
       { headers: { "Content-Type": "application/json" } }
     );

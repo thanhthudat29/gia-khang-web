@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import re
 import subprocess
@@ -82,6 +83,16 @@ def convert_video(url: str, output_dir: Path, prefix: str = "") -> Path:
 
     return final_output
 
+def publish_manifest(job_id: str, manifest_path: Path, manifest_json: str):
+    tag = f"rel_{job_id}_manifest"
+    cmd = [
+        "gh", "release", "create", tag,
+        str(manifest_path),
+        "--title", f"Manifest {job_id}",
+        "--notes", manifest_json
+    ]
+    subprocess.run(cmd, check=True)
+
 def publish_release(job_id: str, index: int, file_path: Path, title: str):
     tag = f"rel_{job_id}_{index:02d}"
     clean_title = f"{index:02d}. {title}"[:60]
@@ -118,7 +129,28 @@ def main():
         entries = list(entries)
         total = len(entries)
         pad_len = 2 if total < 100 else len(str(total))
+        pl_title = info.get("title", "Playlist")
         print(f"--> Playlist detected: {total} videos. Job: {args.job_id}")
+
+        manifest_data = {
+            "title": pl_title,
+            "total": total,
+            "items": [
+                {
+                    "index": i,
+                    "title": sanitize_name(e.get("title", f"video_{i}")),
+                    "id": e.get("id"),
+                }
+                for i, e in enumerate(entries, 1)
+            ]
+        }
+        manifest_json = json.dumps(manifest_data, ensure_ascii=False)
+        manifest_path = out_dir / f"manifest_{args.job_id}.json"
+        manifest_path.write_text(manifest_json, encoding="utf-8")
+
+        if not args.no_release:
+            publish_manifest(args.job_id, manifest_path, manifest_json)
+            print(f"  + Published manifest: rel_{args.job_id}_manifest")
 
         for idx, entry in enumerate(entries, 1):
             v_url = f"https://www.youtube.com/watch?v={entry.get('id')}"
@@ -139,6 +171,24 @@ def main():
     else:
         title = info.get("title", "Video")
         print(f"--> Single video detected: {title}. Job: {args.job_id}")
+
+        manifest_data = {
+            "title": title,
+            "total": 1,
+            "items": [
+                {
+                    "index": 1,
+                    "title": sanitize_name(title),
+                }
+            ]
+        }
+        manifest_json = json.dumps(manifest_data, ensure_ascii=False)
+        manifest_path = out_dir / f"manifest_{args.job_id}.json"
+        manifest_path.write_text(manifest_json, encoding="utf-8")
+
+        if not args.no_release:
+            publish_manifest(args.job_id, manifest_path, manifest_json)
+
         out_file = convert_video(args.url, out_dir, prefix="01_")
         print(f"  + Done convert: {out_file.name}")
 
