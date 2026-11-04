@@ -141,10 +141,7 @@ function updateQueueStatus(manifest, files) {
     if (itemEl && actionEl) {
       const isDownloaded = downloadedIndices.has(idx);
       itemEl.className = "file-item is-ready";
-      actionEl.innerHTML = `
-        <span class="status-tag ready">${isDownloaded ? "✓ Đã tải" : "✓ Sẵn sàng"}</span>
-        <a class="download-link" href="${file.download_url}" target="_blank" rel="noopener">Tải lại</a>
-      `;
+      actionEl.innerHTML = `<span class="status-tag ready">${isDownloaded ? "✓ Đã tải" : "✓ Sẵn sàng"}</span>`;
     }
   });
 
@@ -162,10 +159,7 @@ function updateQueueStatus(manifest, files) {
 
       const actionEl = document.getElementById(`action-${i}`);
       if (actionEl) {
-        actionEl.innerHTML = `
-          <span class="status-tag ready">✓ Đã tải</span>
-          <a class="download-link" href="${f.download_url}" target="_blank" rel="noopener">Tải lại</a>
-        `;
+        actionEl.innerHTML = `<span class="status-tag ready">✓ Đã tải</span>`;
       }
     }
   }
@@ -215,6 +209,7 @@ async function checkStatus() {
       clearInterval(pollTimer);
       statusBadge.textContent = "✓ Hoàn tất tất cả!";
       statusBadge.classList.add("completed");
+      cancelBtn.classList.add("hidden");
       submitBtn.disabled = false;
       submitBtn.textContent = "Bắt Đầu";
       sessionStorage.removeItem("current_job_id");
@@ -235,6 +230,7 @@ function startPolling(jobId) {
   downloadedIndices = loadDownloadedIndices(currentJobId);
   jobInfo.textContent = `Mã: ${currentJobId}`;
   statusCard.classList.remove("hidden");
+  cancelBtn.classList.remove("hidden");
   statusBadge.textContent = "Máy chủ đang khởi động...";
   statusBadge.classList.remove("completed");
   submitBtn.disabled = true;
@@ -273,6 +269,7 @@ form.addEventListener("submit", async (e) => {
   submitBtn.disabled = true;
   submitBtn.textContent = "Đang gửi...";
   statusCard.classList.remove("hidden");
+  cancelBtn.classList.remove("hidden");
   fileList.innerHTML = "";
   manifestInfo.classList.add("hidden");
   renderedManifest = null;
