@@ -18,25 +18,25 @@ const tabPlaylist = document.getElementById("tab-playlist");
 let currentMode = "single";
 let currentJobId = null;
 let pollTimer = null;
-let downloadedFiles = new Set();
+let downloadedIndices = new Set();
 let renderedManifest = null;
 
-function getDownloadedFilesKey(jobId) {
-  return `downloaded_files_${jobId}`;
+function getDownloadedIndicesKey(jobId) {
+  return `downloaded_indices_${jobId}`;
 }
 
-function loadDownloadedFiles(jobId) {
+function loadDownloadedIndices(jobId) {
   try {
-    const raw = sessionStorage.getItem(getDownloadedFilesKey(jobId));
+    const raw = sessionStorage.getItem(getDownloadedIndicesKey(jobId));
     return raw ? new Set(JSON.parse(raw)) : new Set();
   } catch (e) {
     return new Set();
   }
 }
 
-function saveDownloadedFiles(jobId, set) {
+function saveDownloadedIndices(jobId, set) {
   try {
-    sessionStorage.setItem(getDownloadedFilesKey(jobId), JSON.stringify(Array.from(set)));
+    sessionStorage.setItem(getDownloadedIndicesKey(jobId), JSON.stringify(Array.from(set)));
   } catch (e) {}
 }
 
@@ -128,40 +128,59 @@ function renderQueue(manifest) {
 }
 
 function updateQueueStatus(manifest, files) {
-  const readyIndices = new Set();
-
-  files.forEach((file) => {
-    const idx = file.index;
-    if (idx) readyIndices.add(idx);
-
-    if (!downloadedFiles.has(file.id)) {
-      downloadedFiles.add(file.id);
-      saveDownloadedFiles(currentJobId, downloadedFiles);
-      triggerDownload(file.download_url);
+  const readyFilesMap = new Map();
+  files.forEach((f) => {
+    if (f.index) {
+      readyFilesMap.set(f.index, f);
     }
+  });
 
+  readyFilesMap.forEach((file, idx) => {
     const itemEl = document.getElementById(`item-${idx}`);
     const actionEl = document.getElementById(`action-${idx}`);
     if (itemEl && actionEl) {
+      const isDownloaded = downloadedIndices.has(idx);
       itemEl.className = "file-item is-ready";
       actionEl.innerHTML = `
-        <span class="status-tag ready">✓ Đã tải</span>
+        <span class="status-tag ready">${isDownloaded ? "✓ Đã tải" : "✓ Sẵn sàng"}</span>
         <a class="download-link" href="${file.download_url}" target="_blank" rel="noopener">Tải lại</a>
       `;
     }
   });
 
-  if (manifest) {
-    manifestCounter.textContent = `Đã tải ${downloadedFiles.size}/${manifest.total}`;
+  const total = manifest ? manifest.total : files.length;
+  for (let i = 1; i <= total; i++) {
+    if (!readyFilesMap.has(i)) {
+      break;
+    }
 
-    let foundProcessing = false;
+    if (!downloadedIndices.has(i)) {
+      downloadedIndices.add(i);
+      saveDownloadedIndices(currentJobId, downloadedIndices);
+      const f = readyFilesMap.get(i);
+      triggerDownload(f.download_url);
+
+      const actionEl = document.getElementById(`action-${i}`);
+      if (actionEl) {
+        actionEl.innerHTML = `
+          <span class="status-tag ready">✓ Đã tải</span>
+          <a class="download-link" href="${f.download_url}" target="_blank" rel="noopener">Tải lại</a>
+        `;
+      }
+    }
+  }
+
+  if (manifest) {
+    manifestCounter.textContent = `Đã tải ${downloadedIndices.size}/${manifest.total}`;
+
+    let processingCount = 0;
     manifest.items.forEach((it) => {
-      if (!readyIndices.has(it.index)) {
+      if (!readyFilesMap.has(it.index)) {
         const itemEl = document.getElementById(`item-${it.index}`);
         const actionEl = document.getElementById(`action-${it.index}`);
         if (itemEl && actionEl) {
-          if (!foundProcessing) {
-            foundProcessing = true;
+          if (processingCount < 2) {
+            processingCount++;
             itemEl.className = "file-item is-processing";
             actionEl.innerHTML = `<span class="status-tag processing">⚙️ Đang xử lý</span>`;
           } else {
@@ -200,7 +219,7 @@ async function checkStatus() {
       submitBtn.textContent = "Bắt Đầu";
       sessionStorage.removeItem("current_job_id");
     } else {
-      const count = downloadedFiles.size;
+      const count = downloadedIndices.size;
       const total = data.manifest ? data.manifest.total : "?";
       statusBadge.textContent = count > 0
         ? `Đang xử lý... (${count}/${total})`
@@ -213,7 +232,7 @@ async function checkStatus() {
 
 function startPolling(jobId) {
   currentJobId = jobId;
-  downloadedFiles = loadDownloadedFiles(currentJobId);
+  downloadedIndices = loadDownloadedIndices(currentJobId);
   jobInfo.textContent = `Mã: ${currentJobId}`;
   statusCard.classList.remove("hidden");
   statusBadge.textContent = "Máy chủ đang khởi động...";
@@ -257,7 +276,7 @@ form.addEventListener("submit", async (e) => {
   fileList.innerHTML = "";
   manifestInfo.classList.add("hidden");
   renderedManifest = null;
-  downloadedFiles.clear();
+  downloadedIndices.clear();
 
   try {
     const res = await fetch("/api/convert", {
@@ -292,12 +311,12 @@ cancelBtn.addEventListener("click", async () => {
 
   const prevJob = currentJobId;
   currentJobId = null;
-  downloadedFiles.clear();
+  downloadedIndices.clear();
   renderedManifest = null;
 
   if (prevJob) {
     sessionStorage.removeItem("current_job_id");
-    sessionStorage.removeItem(getDownloadedFilesKey(prevJob));
+    sessionStorage.removeItem(getDownloadedIndicesKey(prevJob));
     try {
       await fetch("/api/cancel", {
         method: "POST",

@@ -109,6 +109,8 @@ def main():
     parser.add_argument("--url", required=True, help="Source media URL")
     parser.add_argument("--job-id", required=True, help="Unique job ID for release tagging")
     parser.add_argument("--out-dir", default="output", help="Directory to store output files")
+    parser.add_argument("--worker", type=int, default=0, help="Worker ID")
+    parser.add_argument("--total-workers", type=int, default=1, help="Total workers")
     parser.add_argument("--no-release", action="store_true", help="Skip gh release creation")
     args = parser.parse_args()
 
@@ -130,7 +132,7 @@ def main():
         total = len(entries)
         pad_len = 2 if total < 100 else len(str(total))
         pl_title = info.get("title", "Playlist")
-        print(f"--> Playlist detected: {total} videos. Job: {args.job_id}")
+        print(f"--> Playlist: {total} videos. Worker {args.worker}/{args.total_workers}. Job: {args.job_id}")
 
         manifest_data = {
             "title": pl_title,
@@ -148,15 +150,21 @@ def main():
         manifest_path = out_dir / f"manifest_{args.job_id}.json"
         manifest_path.write_text(manifest_json, encoding="utf-8")
 
-        if not args.no_release:
-            publish_manifest(args.job_id, manifest_path, manifest_json)
-            print(f"  + Published manifest: rel_{args.job_id}_manifest")
+        if args.worker == 0 and not args.no_release:
+            try:
+                publish_manifest(args.job_id, manifest_path, manifest_json)
+                print(f"  + Published manifest: rel_{args.job_id}_manifest")
+            except Exception as e:
+                print(f"  ! Manifest publish warning: {e}")
 
         for idx, entry in enumerate(entries, 1):
+            if (idx - 1) % args.total_workers != args.worker:
+                continue
+
             v_url = f"https://www.youtube.com/watch?v={entry.get('id')}"
             prefix = f"{idx:0{pad_len}d}_"
             title = entry.get("title", f"video_{idx}")
-            print(f"[{idx}/{total}] Processing: {title}...")
+            print(f"[{idx}/{total}] Worker {args.worker} processing: {title}...")
 
             try:
                 out_file = convert_video(v_url, out_dir, prefix=prefix)
@@ -169,6 +177,10 @@ def main():
             except Exception as e:
                 print(f"  ! Error video {idx}: {e}")
     else:
+        if args.worker != 0:
+            print(f"--> Worker {args.worker} idle for single video.")
+            return
+
         title = info.get("title", "Video")
         print(f"--> Single video detected: {title}. Job: {args.job_id}")
 
@@ -187,7 +199,10 @@ def main():
         manifest_path.write_text(manifest_json, encoding="utf-8")
 
         if not args.no_release:
-            publish_manifest(args.job_id, manifest_path, manifest_json)
+            try:
+                publish_manifest(args.job_id, manifest_path, manifest_json)
+            except Exception as e:
+                print(f"  ! Manifest publish warning: {e}")
 
         out_file = convert_video(args.url, out_dir, prefix="01_")
         print(f"  + Done convert: {out_file.name}")
@@ -197,7 +212,7 @@ def main():
             print(f"  + Published release rel_{args.job_id}_01")
             out_file.unlink(missing_ok=True)
 
-    print("--> All tasks completed.")
+    print(f"--> Worker {args.worker} completed all assigned tasks.")
 
 if __name__ == "__main__":
     main()

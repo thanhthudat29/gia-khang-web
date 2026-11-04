@@ -18,6 +18,9 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        worker: [0, 1]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -47,4 +50,4 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           YOUTUBE_COOKIES: ${{ secrets.YOUTUBE_COOKIES }}
         run: |
-          python scripts/process.py --url "${{ inputs.url }}" --job-id "${{ inputs.job_id }}"
+          python scripts/process.py --url "${{ inputs.url }}" --job-id "${{ inputs.job_id }}" --worker ${{ matrix.worker }} --total-workers 2
