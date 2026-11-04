@@ -30,6 +30,7 @@ def get_ydl_base_opts() -> dict:
     opts = {
         "quiet": True,
         "remote_components": ["ejs:github"],
+        "concurrent_fragment_downloads": 4,
     }
     cookies = os.environ.get("YOUTUBE_COOKIES", "").strip()
     if cookies:
@@ -66,7 +67,7 @@ def convert_video(url: str, output_dir: Path, prefix: str = "") -> Path:
 
     cmd = [
         "ffmpeg", "-y", "-i", str(raw_file),
-        "-c:v", "libx264", "-profile:v", "baseline", "-level", "3.1", "-pix_fmt", "yuv420p",
+        "-c:v", "libx264", "-preset", "veryfast", "-profile:v", "baseline", "-level", "3.1", "-pix_fmt", "yuv420p",
         "-vf", "scale=854:480:force_original_aspect_ratio=decrease,pad=854:480:(ow-iw)/2:(oh-ih)/2",
         "-c:a", "aac", "-b:a", "128k", "-ar", "44100",
         "-movflags", "+faststart",
