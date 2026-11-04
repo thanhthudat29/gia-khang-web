@@ -1,5 +1,7 @@
 const form = document.getElementById("convert-form");
 const urlInput = document.getElementById("url-input");
+const urlLabel = document.getElementById("url-label");
+const urlError = document.getElementById("url-error");
 const submitBtn = document.getElementById("submit-btn");
 const statusCard = document.getElementById("status-card");
 const statusBadge = document.getElementById("status-badge");
@@ -9,10 +11,70 @@ const manifestInfo = document.getElementById("manifest-info");
 const manifestTitle = document.getElementById("manifest-title");
 const manifestCounter = document.getElementById("manifest-counter");
 
+const tabSingle = document.getElementById("tab-single");
+const tabPlaylist = document.getElementById("tab-playlist");
+
+let currentMode = "single";
 let currentJobId = null;
 let pollTimer = null;
 const downloadedFiles = new Set();
 let renderedManifest = null;
+
+tabSingle.addEventListener("click", () => {
+  if (currentMode === "single") return;
+  currentMode = "single";
+  tabSingle.classList.add("active");
+  tabPlaylist.classList.remove("active");
+  urlLabel.textContent = "Nhập liên kết Video YouTube:";
+  urlInput.placeholder = "https://www.youtube.com/watch?v=... hoặc https://youtu.be/...";
+  urlError.classList.add("hidden");
+});
+
+tabPlaylist.addEventListener("click", () => {
+  if (currentMode === "playlist") return;
+  currentMode = "playlist";
+  tabPlaylist.classList.add("active");
+  tabSingle.classList.remove("active");
+  urlLabel.textContent = "Nhập liên kết Danh Sách Phát YouTube (Playlist):";
+  urlInput.placeholder = "https://www.youtube.com/playlist?list=...";
+  urlError.classList.add("hidden");
+});
+
+function validateYouTubeUrl(rawUrl, mode) {
+  let parsed;
+  try {
+    parsed = new URL(rawUrl);
+  } catch (e) {
+    return "Đường dẫn không đúng định dạng URL!";
+  }
+
+  const validHosts = ["youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com", "youtu.be"];
+  if (!validHosts.includes(parsed.hostname.toLowerCase())) {
+    return "Vui lòng nhập đường dẫn thuộc YouTube (youtube.com hoặc youtu.be)!";
+  }
+
+  if (mode === "single") {
+    if (parsed.hostname.toLowerCase() === "youtu.be") {
+      if (parsed.pathname.length <= 1) {
+        return "Đường dẫn youtu.be thiếu mã video!";
+      }
+    } else {
+      const v = parsed.searchParams.get("v");
+      const isShorts = parsed.pathname.startsWith("/shorts/");
+      const isEmbed = parsed.pathname.startsWith("/embed/");
+      if (!v && !isShorts && !isEmbed) {
+        return "Đường dẫn không chứa mã video YouTube (?v=...)!";
+      }
+    }
+  } else if (mode === "playlist") {
+    const listId = parsed.searchParams.get("list");
+    if (!listId) {
+      return "Đường dẫn không chứa danh sách phát (thiếu tham số ?list=...)! Nếu là video đơn, vui lòng chọn tab Video Đơn.";
+    }
+  }
+
+  return null;
+}
 
 function triggerDownload(url, filename) {
   const a = document.createElement("a");
@@ -145,8 +207,28 @@ function startPolling(jobId) {
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const url = urlInput.value.trim();
-  if (!url) return;
+  const rawUrl = urlInput.value.trim();
+  if (!rawUrl) return;
+
+  const err = validateYouTubeUrl(rawUrl, currentMode);
+  if (err) {
+    urlError.textContent = err;
+    urlError.classList.remove("hidden");
+    return;
+  }
+  urlError.classList.add("hidden");
+
+  let targetUrl = rawUrl;
+  if (currentMode === "single") {
+    try {
+      const u = new URL(rawUrl);
+      if (u.searchParams.has("list")) {
+        u.searchParams.delete("list");
+        u.searchParams.delete("index");
+        targetUrl = u.toString();
+      }
+    } catch (e) {}
+  }
 
   submitBtn.disabled = true;
   submitBtn.textContent = "Đang gửi...";
@@ -160,7 +242,7 @@ form.addEventListener("submit", async (e) => {
     const res = await fetch("/api/convert", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url }),
+      body: JSON.stringify({ url: targetUrl }),
     });
 
     const data = await res.json();

@@ -14,17 +14,23 @@
     </header>
 
     <main>
+      <div class="tab-group">
+        <button type="button" class="tab-btn active" id="tab-single" data-mode="single">Video Đơn</button>
+        <button type="button" class="tab-btn" id="tab-playlist" data-mode="playlist">Danh Sách Phát</button>
+      </div>
+
       <form id="convert-form" class="card">
-        <label for="url-input">Nhập liên kết:</label>
+        <label for="url-input" id="url-label">Nhập liên kết Video YouTube:</label>
         <div class="input-group">
           <input
             type="url"
             id="url-input"
-            placeholder="https://..."
+            placeholder="https://www.youtube.com/watch?v=... hoặc https://youtu.be/..."
             required
           >
           <button type="submit" id="submit-btn">Bắt Đầu</button>
         </div>
+        <div id="url-error" class="error-msg hidden"></div>
         <p class="hint">💡 Tệp sẽ tự động được tải xuống thiết bị sau khi xử lý xong.</p>
       </form>
 

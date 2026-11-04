@@ -70,6 +70,36 @@ header {
   font-weight: 500;
 }
 
+.tab-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 10px 16px;
+  background: #e2e8f0;
+  color: #475569;
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-btn:hover:not(.active) {
+  background: #cbd5e1;
+}
+
+.tab-btn.active {
+  background: var(--accent);
+  color: #ffffff;
+  box-shadow: 0 4px 10px var(--accent-glow);
+}
+
 .card {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
@@ -124,7 +154,7 @@ input[type="url"]:focus {
   box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
-button {
+button[type="submit"] {
   padding: 13px 24px;
   background: var(--accent);
   color: white;
@@ -138,7 +168,7 @@ button {
   white-space: nowrap;
 }
 
-button:hover:not(:disabled) {
+button[type="submit"]:hover:not(:disabled) {
   background: var(--accent-hover);
   box-shadow: 0 4px 12px var(--accent-glow);
 }
@@ -146,6 +176,17 @@ button:hover:not(:disabled) {
 button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.error-msg {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border: 1px solid #fecaca;
 }
 
 .hint {
@@ -318,7 +359,7 @@ footer {
   .input-group {
     flex-direction: column;
   }
-  button {
+  button[type="submit"] {
     width: 100%;
   }
   .card {
