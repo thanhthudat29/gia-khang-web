@@ -76,13 +76,12 @@ function validateYouTubeUrl(rawUrl, mode) {
   return null;
 }
 
-function triggerDownload(url, filename) {
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+function triggerDownload(url) {
+  const iframe = document.createElement("iframe");
+  iframe.style.display = "none";
+  iframe.src = url;
+  document.body.appendChild(iframe);
+  setTimeout(() => iframe.remove(), 120000);
 }
 
 function renderQueue(manifest) {
@@ -117,7 +116,7 @@ function updateQueueStatus(manifest, files) {
 
     if (!downloadedFiles.has(file.id)) {
       downloadedFiles.add(file.id);
-      triggerDownload(file.download_url, file.name);
+      triggerDownload(file.download_url);
     }
 
     const itemEl = document.getElementById(`item-${idx}`);
@@ -126,7 +125,7 @@ function updateQueueStatus(manifest, files) {
       itemEl.className = "file-item is-ready";
       actionEl.innerHTML = `
         <span class="status-tag ready">✓ Đã tải</span>
-        <a class="download-link" href="${file.download_url}" target="_blank">Tải lại</a>
+        <a class="download-link" href="${file.download_url}" target="_blank" rel="noopener">Tải lại</a>
       `;
     }
   });

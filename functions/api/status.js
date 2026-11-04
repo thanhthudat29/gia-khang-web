@@ -33,23 +33,29 @@ export async function onRequestGet({ request, env }) {
     if (relResp.ok) {
       const releases = await relResp.json();
       for (const rel of releases) {
+        if (rel.draft || !rel.tag_name || rel.tag_name.startsWith("untagged")) {
+          continue;
+        }
+
         if (rel.tag_name === `rel_${jobId}_manifest`) {
           try {
             manifest = JSON.parse(rel.body);
           } catch (e) {
             manifest = null;
           }
-        } else if (rel.tag_name && rel.tag_name.startsWith(prefix)) {
+        } else if (rel.tag_name.startsWith(prefix)) {
           const match = rel.tag_name.match(new RegExp(`^rel_${jobId}_(\\d+)$`));
           const fileIndex = match ? parseInt(match[1], 10) : null;
           for (const asset of rel.assets || []) {
-            if (asset.name.endsWith(".mp4")) {
+            const isUploaded = !asset.state || asset.state === "uploaded";
+            if (asset.name.endsWith(".mp4") && isUploaded) {
+              const downloadUrl = `https://github.com/${repo}/releases/download/${rel.tag_name}/${encodeURIComponent(asset.name)}`;
               readyFiles.push({
                 id: asset.id,
                 index: fileIndex,
                 tag: rel.tag_name,
                 name: asset.name,
-                download_url: asset.browser_download_url,
+                download_url: downloadUrl,
                 size: asset.size,
               });
             }
