@@ -1,7 +1,6 @@
 import sys
 from pathlib import Path
 
-# Add project root to sys.path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from scripts.process import sanitize_name, normalize_playlist_url, convert_video
@@ -11,17 +10,14 @@ def test_sanitize_name():
     assert sanitize_name('  Normal Name  ') == 'Normal Name'
 
 def test_normalize_playlist_url():
-    # Test playlist URL conversion
     url_with_list = "https://www.youtube.com/watch?v=jNQXAC9IVRw&list=PL12345"
     normalized = normalize_playlist_url(url_with_list)
     assert normalized == "https://www.youtube.com/playlist?list=PL12345"
 
-    # Test short video (Me at the zoo - 19 seconds)
     short_url = "https://www.youtube.com/watch?v=jNQXAC9IVRw"
     assert normalize_playlist_url(short_url) == short_url
 
 def test_convert_short_video():
-    # Video siêu ngắn 19 giây để test nhanh trong 2-3s
     short_url = "https://www.youtube.com/watch?v=jNQXAC9IVRw"
     test_dir = Path(__file__).resolve().parent / "temp_test"
     test_dir.mkdir(parents=True, exist_ok=True)
