@@ -24,31 +24,57 @@ jobs:
       matrix:
         worker: [0, 1]
     steps:
+      - name: Check worker
+        id: check
+        env:
+          INPUT_URL: ${{ inputs.url }}
+          WORKER_ID: ${{ matrix.worker }}
+        run: |
+          python3 - <<'EOF'
+          import os, urllib.parse
+
+          url = os.environ.get("INPUT_URL", "").strip()
+          worker = int(os.environ.get("WORKER_ID", "0"))
+          qs = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
+          is_playlist = bool(qs.get("list"))
+
+          run_worker = "true" if (worker == 0 or is_playlist) else "false"
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+              f.write(f"run_worker={run_worker}\n")
+          print(f"is_playlist={is_playlist}, worker={worker}, run_worker={run_worker}")
+          EOF
+
       - name: Checkout code
+        if: steps.check.outputs.run_worker == 'true'
         uses: actions/checkout@v4
 
       - name: Set up Deno
+        if: steps.check.outputs.run_worker == 'true'
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
 
       - name: Set up FFmpeg
+        if: steps.check.outputs.run_worker == 'true'
         run: |
           if ! command -v ffmpeg >/dev/null 2>&1; then
             sudo apt-get update -y && sudo apt-get install -y ffmpeg
           fi
 
       - name: Set up Python
+        if: steps.check.outputs.run_worker == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
           cache: 'pip'
 
       - name: Install dependencies
+        if: steps.check.outputs.run_worker == 'true'
         run: |
           pip install -r requirements.txt
 
       - name: Process Media Assets
+        if: steps.check.outputs.run_worker == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           YOUTUBE_COOKIES: ${{ secrets.YOUTUBE_COOKIES }}
