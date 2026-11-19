@@ -7,6 +7,7 @@ from scripts.process import sanitize_name, normalize_playlist_url, convert_video
 
 def test_sanitize_name():
     assert sanitize_name('Video: Special / Test? * <Name> |') == 'Video Special  Test  Name'
+    assert sanitize_name('[Review Phim] Video #1') == 'Review Phim Video 1'
     assert sanitize_name('  Normal Name  ') == 'Normal Name'
 
 def test_normalize_playlist_url():

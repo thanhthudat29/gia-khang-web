@@ -18,7 +18,7 @@ if sys.stderr and hasattr(sys.stderr, "reconfigure") and sys.stderr.encoding != 
     sys.stderr.reconfigure(encoding="utf-8")
 
 def sanitize_name(name: str) -> str:
-    return re.sub(r'[\\/*?:"<>|]', "", name).strip()
+    return re.sub(r'[\\/*?:"<>|\[\]#]', "", name).strip()
 
 def normalize_playlist_url(url: str) -> str:
     parsed = urllib.parse.urlparse(url)
@@ -63,7 +63,7 @@ def convert_video(url: str, output_dir: Path, prefix: str = "") -> Path:
         title = info.get("title", "video")
         raw_file = Path(ydl.prepare_filename(info))
 
-    clean_title = sanitize_name(title)
+    clean_title = sanitize_name(title) or "video"
     final_output = output_dir / f"{prefix}{clean_title}_X20.mp4"
 
     cmd = [
